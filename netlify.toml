@@ -1,0 +1,11 @@
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+[functions]
+  # Netlify Functions live here. The analyze pipeline is added in a later step.
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
