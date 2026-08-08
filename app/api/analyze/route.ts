@@ -4,21 +4,23 @@
 // function, so GEMINI_API_KEY and the service work stay server-side and never
 // reach the browser.
 //
-// Pipeline (Step 3 scope):
+// Pipeline:
 //   1. Receive an uploaded file (PDF or image) or pasted text.
 //   2. PDF -> try text layer (pdf-parse). If < threshold chars, treat as scan.
 //   3. Scan/image -> send bytes to Gemini inline for transcription.
 //   4. scrub() ALL text before it is stored, logged, or reused.
 //   5. Gemini extraction call (JSON schema) -> validate/normalize.
-//   6. Persist for signed-in users; always return the analysis.
+//   6. Deterministic rule pass (lib/flags.ts) over the bill's own contents.
+//   7. Persist for signed-in users; always return the analysis.
 //
-// Deterministic flagging and the rights engine are added in later steps.
+// The rights engine is added in a later step.
 
 import { NextResponse } from "next/server";
 import { scrub } from "@/lib/scrub";
 import { extractPdfText, SCAN_TEXT_THRESHOLD } from "@/lib/pdf";
 import { transcribeFile, extractCharges, RateLimitError } from "@/lib/gemini";
 import { validateExtraction, computeTotal } from "@/lib/types";
+import { runFlags } from "@/lib/flags";
 import { createClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
@@ -148,7 +150,10 @@ export async function POST(request: Request) {
 
   const computed_total = computeTotal(extraction.charges);
 
-  // ---- 6: persist for signed-in users; always return the analysis ---------
+  // ---- 6: deterministic rule pass over the bill's own contents ------------
+  const flags = runFlags(extraction);
+
+  // ---- 7: persist for signed-in users; always return the analysis ---------
   const analysis = {
     filename,
     provider_name: extraction.provider_name,
@@ -157,7 +162,9 @@ export async function POST(request: Request) {
     service_date_end: extraction.service_date_end,
     stated_total: extraction.stated_total,
     computed_total,
+    flag_count: flags.length,
     charges: extraction.charges,
+    flags,
     scrubbed_text: scrubbedText,
   };
 
@@ -183,7 +190,7 @@ export async function POST(request: Request) {
         service_date_end: extraction.service_date_end,
         stated_total: extraction.stated_total,
         computed_total,
-        flag_count: 0,
+        flag_count: flags.length,
         status: "analyzed",
         scrubbed_text: scrubbedText,
       })
@@ -207,7 +214,30 @@ export async function POST(request: Request) {
       unit_price: c.unit_price,
       amount_charged: c.amount_charged,
     }));
-    await supabase.from("charges").insert(chargeRows);
+    // Insert charges and read back their ids so flags can reference them.
+    const { data: insertedCharges } = await supabase
+      .from("charges")
+      .insert(chargeRows)
+      .select("id, line_number");
+
+    if (flags.length > 0) {
+      const idByLine = new Map<number, string>();
+      for (const row of insertedCharges ?? []) {
+        idByLine.set(row.line_number as number, row.id as string);
+      }
+      const flagRows = flags.map((f) => ({
+        bill_id: bill.id,
+        charge_id:
+          f.charge_line_number !== null
+            ? idByLine.get(f.charge_line_number) ?? null
+            : null,
+        flag_type: f.flag_type,
+        severity: f.severity,
+        explanation: f.explanation,
+        suggested_question: f.suggested_question,
+      }));
+      await supabase.from("flags").insert(flagRows);
+    }
 
     return NextResponse.json({ saved: true, billId: bill.id, analysis });
   } catch {
