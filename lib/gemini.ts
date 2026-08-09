@@ -12,12 +12,15 @@ import {
 } from "@google/generative-ai";
 import { EXTRACTION_PROMPT, TRANSCRIPTION_PROMPT } from "@/lib/prompts";
 
-// The spec targets gemini-2.5-flash, but Google now blocks the bare
-// gemini-2.5-flash alias for new API keys ("no longer available to new
-// users"). gemini-flash-latest is Google's alias for the current stable
-// free-tier flash model and is available to new keys, so we use it. Still
-// Gemini Flash, still the free tier.
-const MODEL_NAME = "gemini-flash-latest";
+// gemini-flash-lite-latest is Google's alias for the current stable free-tier
+// Flash-Lite model. We use it because extraction speed is critical: a large
+// itemized bill (100+ line items) takes ~97s on gemini-flash-latest, which
+// exceeds serverless function limits (Vercel caps at 60s) and fails outright.
+// Flash-Lite does the same structured extraction in ~38s for the same bill,
+// keeping large bills within the timeout while staying on the free tier.
+// (The spec targeted gemini-2.5-flash, but Google blocks that alias for new
+// API keys, and the plain flash model is too slow for big bills anyway.)
+const MODEL_NAME = "gemini-flash-lite-latest";
 
 // Thrown when Gemini returns 429 (free tier is ~10 req/min). The route turns
 // this into a friendly retry message for the user.
