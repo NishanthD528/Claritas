@@ -29,11 +29,21 @@ If you want to know what a code *should* cost, the app links you to the public
 - Next.js 14 (App Router) + TypeScript
 - Tailwind CSS
 - Supabase (Postgres, Auth) — free tier
-- Netlify Functions
+- Netlify (the analysis pipeline is a Next.js Route Handler that
+  `@netlify/plugin-nextjs` deploys as a serverless function, so the API keys
+  never reach the browser)
 - `pdf-parse` for text-layer PDF extraction
-- Google AI Studio (Gemini `gemini-2.5-flash`) via `@google/generative-ai`
+- Google AI Studio (Gemini) via `@google/generative-ai`
 
 Every service runs on a permanent free tier. There are no paid APIs.
+
+### A note on the Gemini model
+
+The project targets `gemini-2.5-flash`, but Google now blocks the bare
+`gemini-2.5-flash` alias for newly created API keys. The code therefore uses
+`gemini-flash-latest` — Google's alias for the current stable free-tier Flash
+model, which new keys can use. It is a single constant in
+[`lib/gemini.ts`](lib/gemini.ts) if you need to change it.
 
 ## Local setup
 
@@ -78,7 +88,31 @@ Every service runs on a permanent free tier. There are no paid APIs.
    share config, so this is required even though you set them in `.env.local`.
 4. Deploy.
 
-## Project status
+## How the pipeline fits together
 
-Built incrementally. See the build order in the project brief. Step 1 (scaffold,
-Tailwind, Supabase client, auth, schema + RLS) is complete.
+1. `/analyze` (client) sends the uploaded file or pasted text to
+   `POST /api/analyze`.
+2. The route extracts text (`pdf-parse` for text-layer PDFs; Gemini inline
+   transcription for scans and photos), then runs [`lib/scrub.ts`](lib/scrub.ts)
+   on **all** text before anything is stored, logged, or sent onward.
+3. Gemini extracts structured line items (JSON schema); the result is validated
+   and normalized in [`lib/types.ts`](lib/types.ts).
+4. [`lib/flags.ts`](lib/flags.ts) runs deterministic checks on the bill's own
+   contents (math, duplicates, unit anomalies, unbundling, vague lines).
+5. [`lib/rights.ts`](lib/rights.ts) matches the static rights knowledge base to
+   the bill.
+6. For signed-in users the bill, charges, flags, and rights are persisted under
+   Row Level Security; signed-out users get the analysis held in the page.
+7. [`lib/letter.ts`](lib/letter.ts) builds a dispute letter deterministically
+   from the stored data — no model involved.
+
+## Testing
+
+```bash
+npm test        # Jest unit tests (scrub, flags, rights, letter, pdf wrapper)
+npm run lint    # ESLint
+npx tsc --noEmit # type check
+```
+
+The scrubber, flag engine, rights matcher, and letter builder are covered by
+unit tests over synthetic fixtures. No real bill data is committed anywhere.
