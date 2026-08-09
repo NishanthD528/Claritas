@@ -36,11 +36,28 @@ export default function AuthPage() {
 
     try {
       if (mode === "signup") {
-        const { error } = await supabase.auth.signUp({ email, password });
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            // If email confirmation is on, send the link back to THIS site
+            // (the deployed origin), never localhost.
+            emailRedirectTo:
+              typeof window !== "undefined"
+                ? `${window.location.origin}/auth`
+                : undefined,
+          },
+        });
         if (error) throw error;
-        setMessage(
-          "Account created. If email confirmation is enabled, check your inbox before signing in.",
-        );
+        if (data.session) {
+          // Email confirmation is off: we're signed in immediately.
+          router.push("/bills");
+          router.refresh();
+        } else {
+          setMessage(
+            "Account created. Check your inbox to confirm your email, then sign in.",
+          );
+        }
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email,
