@@ -17,7 +17,8 @@ export type RightKey =
   | "financial_assistance"
   | "payment_plan"
   | "collections_pause"
-  | "insurance_eob_check";
+  | "insurance_eob_check"
+  | "medical_necessity";
 
 export interface RightEntry {
   key: RightKey;
@@ -108,6 +109,20 @@ export const RIGHTS: Record<RightKey, RightEntry> = {
     action:
       "Find the matching EOB from your insurer and confirm the patient " +
       "responsibility amount matches this bill before paying.",
+    verifyNote: VERIFY,
+  },
+  medical_necessity: {
+    key: "medical_necessity",
+    title: "Ask why each service was ordered",
+    explanation:
+      "A bill shows what you were charged for, but not why. Claritas does not " +
+      "give medical advice and cannot judge whether a test or service was " +
+      "needed — only your care team can. If a charge is unclear to you, it is " +
+      "always reasonable to ask why it was ordered and whether it was " +
+      "necessary for your visit.",
+    action:
+      "Ask your provider to explain why each test or service was ordered and " +
+      "whether all of them were necessary for your visit.",
     verifyNote: VERIFY,
   },
 };
@@ -249,6 +264,15 @@ export function matchRights(
     relevance:
       "Comparing any bill against your insurer's EOB before paying applies to " +
       "every bill.",
+  });
+
+  // medical_necessity (always) — a question to ask, never a judgment that
+  // anything was unnecessary.
+  matched.push({
+    right_key: "medical_necessity",
+    relevance:
+      "You can ask about the reason for any service on any bill; this is a " +
+      "question for your care team, not something this app decides.",
   });
 
   return matched;

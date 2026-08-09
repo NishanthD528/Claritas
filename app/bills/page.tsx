@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { fmtMoney, fmtDate } from "@/lib/format";
 import { StatusBadge } from "@/components/StatusBadge";
+import { DeleteBillButton } from "@/components/DeleteBillButton";
 
 export const dynamic = "force-dynamic";
 
@@ -86,6 +87,9 @@ export default async function BillsPage() {
                 <th className="px-4 py-3 text-right font-medium">Total</th>
                 <th className="px-4 py-3 text-center font-medium">Questions</th>
                 <th className="px-4 py-3 font-medium">Status</th>
+                <th className="px-4 py-3 text-right font-medium">
+                  <span className="sr-only">Actions</span>
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -121,6 +125,9 @@ export default async function BillsPage() {
                     </td>
                     <td className="px-4 py-3">
                       <StatusBadge status={b.status ?? "analyzed"} />
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <DeleteBillButton billId={b.id} />
                     </td>
                   </tr>
                 );

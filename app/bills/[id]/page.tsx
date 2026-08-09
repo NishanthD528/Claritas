@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { billViewFromRows } from "@/lib/view";
 import { ResultsView } from "@/components/results/ResultsView";
 import { DisputeSection } from "@/components/results/DisputeSection";
+import { DeleteBillButton } from "@/components/DeleteBillButton";
 
 export const dynamic = "force-dynamic";
 
@@ -91,10 +92,11 @@ export default async function BillResultsPage({
         />
       </section>
 
-      <div className="mt-10 border-t border-slate-200 pt-6 text-sm">
+      <div className="mt-10 flex items-center justify-between border-t border-slate-200 pt-6 text-sm">
         <Link href="/bills" className="text-accent hover:underline">
           ← All my bills
         </Link>
+        <DeleteBillButton billId={bill.id} redirectTo="/bills" />
       </div>
     </div>
   );

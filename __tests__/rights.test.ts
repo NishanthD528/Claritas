@@ -44,6 +44,16 @@ describe("matchRights", () => {
     expect(keys(r)).toContain("insurance_eob_check");
   });
 
+  test("medical_necessity always applies, framed as a question", () => {
+    const r = matchRights(input({}));
+    expect(keys(r)).toContain("medical_necessity");
+    // The static entry must not assert anything was unnecessary.
+    expect(RIGHTS.medical_necessity.action).toMatch(/ask/i);
+    expect(RIGHTS.medical_necessity.explanation.toLowerCase()).toContain(
+      "does not give medical advice"
+    );
+  });
+
   test("financial_assistance and payment_plan for a large hospital bill", () => {
     const r = matchRights(
       input({
@@ -139,13 +149,14 @@ describe("matchRights", () => {
     }
   });
 
-  test("knowledge base has all six seed entries", () => {
+  test("knowledge base has all seed entries", () => {
     expect(Object.keys(RIGHTS).sort()).toEqual(
       [
         "collections_pause",
         "financial_assistance",
         "insurance_eob_check",
         "itemized_bill",
+        "medical_necessity",
         "payment_plan",
         "surprise_billing",
       ].sort()

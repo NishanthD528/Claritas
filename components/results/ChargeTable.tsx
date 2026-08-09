@@ -38,6 +38,17 @@ export function ChargeTable({
                       {c.code_type}
                     </span>
                   ) : null}
+                  {c.code ? (
+                    <a
+                      href="https://www.cms.gov/medicare/physician-fee-schedule/search"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title="Look up this code's Medicare rate on the government's tool"
+                      className="mt-1 block font-sans text-[11px] font-medium text-accent hover:underline"
+                    >
+                      Look up rate ↗
+                    </a>
+                  ) : null}
                 </td>
                 <td className="px-4 py-3 align-top">
                   <div className="flex items-start gap-2">
