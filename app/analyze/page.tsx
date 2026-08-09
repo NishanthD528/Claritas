@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ResultsView } from "@/components/results/ResultsView";
@@ -71,18 +71,8 @@ export default function AnalyzePage() {
   const [loading, setLoading] = useState(false);
   const [phase, setPhase] = useState<string>("reading");
   const [error, setError] = useState<string | null>(null);
-  const [cooldown, setCooldown] = useState(0); // seconds left after a 429
   const [result, setResult] = useState<BillView | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-
-  // Count the rate-limit cooldown down to zero.
-  useEffect(() => {
-    if (cooldown <= 0) return;
-    const id = setInterval(() => {
-      setCooldown((s) => Math.max(0, s - 1));
-    }, 1000);
-    return () => clearInterval(id);
-  }, [cooldown]);
 
   const onDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -91,10 +81,13 @@ export default function AnalyzePage() {
     if (f) setFile(f);
   }, []);
 
+  const RATE_LIMIT_MESSAGE =
+    "Claritas is getting a lot of requests right now. Wait about a minute and try again.";
+
   async function submit() {
-    // Guard against fast double-clicks burning two Gemini calls on one bill,
-    // and against submitting during the rate-limit cooldown.
-    if (loading || cooldown > 0) return;
+    // Only guard against a fast double-click while a request is already in
+    // flight; back-to-back runs are allowed.
+    if (loading) return;
     setError(null);
     setResult(null);
     const hasFile = tab === "upload" && file;
@@ -133,7 +126,7 @@ export default function AnalyzePage() {
           return false;
         }
         if (msg.rateLimited) {
-          setCooldown(60);
+          setError(RATE_LIMIT_MESSAGE);
           return true;
         }
         if (msg.error) {
@@ -183,7 +176,7 @@ export default function AnalyzePage() {
       }
 
       if (res.status === 429) {
-        setCooldown(60);
+        setError(RATE_LIMIT_MESSAGE);
         handled = true;
       }
 
@@ -316,17 +309,7 @@ export default function AnalyzePage() {
         </div>
       )}
 
-      {cooldown > 0 ? (
-        <div className="mt-4 rounded-md bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          <p className="font-medium">
-            Claritas is getting a lot of requests right now.
-          </p>
-          <p className="mt-0.5">
-            Wait about a minute and try again. You can retry in{" "}
-            <span className="font-semibold tabular-nums">{cooldown}s</span>.
-          </p>
-        </div>
-      ) : error ? (
+      {error ? (
         <p className="mt-4 rounded-md bg-danger-soft px-4 py-3 text-sm text-danger">
           {error}
         </p>
@@ -334,14 +317,10 @@ export default function AnalyzePage() {
 
       <button
         onClick={submit}
-        disabled={loading || cooldown > 0}
+        disabled={loading}
         className="mt-6 inline-flex items-center justify-center rounded-lg bg-accent px-5 py-2.5 text-sm font-medium text-white transition hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-60"
       >
-        {loading
-          ? PHASE_LABELS[phase] ?? "Working…"
-          : cooldown > 0
-          ? `Try again in ${cooldown}s`
-          : "Analyze this bill"}
+        {loading ? PHASE_LABELS[phase] ?? "Working…" : "Analyze this bill"}
       </button>
 
       {loading ? (
