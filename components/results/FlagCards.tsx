@@ -6,8 +6,8 @@ import type { Severity } from "@/lib/flags";
 
 // Human-readable labels for flag types.
 const FLAG_LABELS: Record<string, string> = {
-  math_error: "Total doesn't add up",
-  line_math_error: "Line total doesn't add up",
+  math_error: "Total may not add up",
+  line_math_error: "Line total may not add up",
   duplicate: "Possible duplicate charge",
   near_duplicate: "Possible duplicate charge",
   unit_anomaly: "Unusual quantity",
