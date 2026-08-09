@@ -148,6 +148,22 @@ export async function POST(request: Request) {
     );
   }
 
+  // If line items came back but not one of them has a readable amount, the
+  // extraction is too garbled to show. Don't render a broken results page.
+  if (
+    extraction.charges.length > 0 &&
+    extraction.charges.every((c) => c.amount_charged === null)
+  ) {
+    return NextResponse.json(
+      {
+        error:
+          "We couldn't read this bill clearly. Try a clearer photo, or paste " +
+          "the text directly instead.",
+      },
+      { status: 422 }
+    );
+  }
+
   let computed_total: number;
   let flags;
   let rights;

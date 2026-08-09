@@ -24,6 +24,12 @@ export function ResultsView({ bill }: { bill: BillView }) {
       .filter((n): n is number => n !== null)
   );
 
+  // Whether every line has a readable amount. When not, the total can't be
+  // reliably checked and we say so instead of showing a computed figure.
+  const amountsComplete =
+    bill.charges.length > 0 &&
+    bill.charges.every((c) => c.amount_charged !== null);
+
   const dateRange =
     bill.service_date_start && bill.service_date_end
       ? bill.service_date_start === bill.service_date_end
@@ -47,7 +53,11 @@ export function ResultsView({ bill }: { bill: BillView }) {
         </p>
       </div>
 
-      <MathBanner stated={bill.stated_total} computed={bill.computed_total} />
+      <MathBanner
+        stated={bill.stated_total}
+        computed={bill.computed_total}
+        amountsComplete={amountsComplete}
+      />
 
       <PriceQuestionNote />
 

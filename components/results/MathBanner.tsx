@@ -6,10 +6,29 @@ import { fmtMoney } from "@/lib/format";
 export function MathBanner({
   stated,
   computed,
+  amountsComplete = true,
 }: {
   stated: number | null;
   computed: number;
+  // False when at least one line amount couldn't be read, so the total can't
+  // be reliably checked.
+  amountsComplete?: boolean;
 }) {
+  if (!amountsComplete) {
+    return (
+      <div className="rounded-lg border border-slate-200 bg-slate-50 p-5">
+        <p className="text-sm font-medium text-slate-700">
+          The total couldn&rsquo;t be fully checked.
+        </p>
+        <p className="mt-1 text-sm text-slate-600">
+          Some line amounts couldn&rsquo;t be read from this bill, so the
+          charges can&rsquo;t be added up reliably. A clearer photo, or pasting
+          the text, may help.
+        </p>
+      </div>
+    );
+  }
+
   if (stated === null) {
     return (
       <div className="rounded-lg border border-slate-200 bg-slate-50 p-5">

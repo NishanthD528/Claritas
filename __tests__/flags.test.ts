@@ -51,6 +51,17 @@ describe("runFlags deterministic checks", () => {
     expect(flags[0].charge_line_number).toBeNull();
   });
 
+  test("no math_error when a line amount is missing (unreliable total)", () => {
+    const b = bill({
+      stated_total: 500,
+      charges: [
+        charge({ line_number: 1, amount_charged: 150 }),
+        charge({ line_number: 2, amount_charged: null }),
+      ],
+    });
+    expect(has(runFlags(b), "math_error")).toBe(false);
+  });
+
   test("no math_error when totals match within a cent", () => {
     const b = bill({
       stated_total: 350,

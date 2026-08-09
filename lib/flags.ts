@@ -108,8 +108,12 @@ function label(c: ChargeExtraction): string {
 
 // 1) Bill-level math: line items vs. the printed total.
 function checkBillMath(bill: BillExtraction, cfg: FlagConfig): Flag[] {
-  const computed = computeTotal(bill.charges);
   if (bill.stated_total === null) return [];
+  // If any line amount couldn't be read, the computed total is incomplete and
+  // comparing it to the stated total would produce a false mismatch. Don't
+  // raise a flag from missing values.
+  if (bill.charges.some((c) => c.amount_charged === null)) return [];
+  const computed = computeTotal(bill.charges);
   const diff = Math.abs(bill.stated_total - computed);
   if (diff <= cfg.centTolerance) return [];
   return [

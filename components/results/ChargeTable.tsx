@@ -26,6 +26,17 @@ export function ChargeTable({
         <tbody className="divide-y divide-slate-100">
           {charges.map((c) => {
             const flagged = flaggedLines.has(c.line_number);
+            // A row we couldn't read cleanly: no amount, or no description.
+            const unclear =
+              c.amount_charged === null &&
+              !c.description_raw &&
+              !c.description_plain
+                ? "empty"
+                : c.amount_charged === null
+                ? "no amount"
+                : !c.description_raw && !c.description_plain
+                ? "no description"
+                : null;
             return (
               <tr
                 key={c.line_number}
@@ -60,10 +71,18 @@ export function ChargeTable({
                       />
                     ) : null}
                     <div>
-                      <div className="font-medium text-ink">
-                        {c.description_raw || "—"}
+                      <div className="flex items-center gap-2 font-medium text-ink">
+                        {c.description_raw || c.description_plain || "—"}
+                        {unclear ? (
+                          <span
+                            title="This line couldn't be read clearly from the bill"
+                            className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-amber-700"
+                          >
+                            Unclear
+                          </span>
+                        ) : null}
                       </div>
-                      {c.description_plain ? (
+                      {c.description_raw && c.description_plain ? (
                         <div className="mt-0.5 text-xs text-slate-500">
                           {c.description_plain}
                         </div>
