@@ -42,13 +42,13 @@ export default function Home() {
                 ]}
                 mainClassName="mt-2 w-fit overflow-hidden rounded-xl bg-emerald-300 px-3 py-1 text-emerald-950"
                 splitLevelClassName="overflow-hidden pb-1"
-                staggerFrom="last"
-                initial={{ y: "100%" }}
-                animate={{ y: 0 }}
-                exit={{ y: "-120%" }}
-                staggerDuration={0.025}
-                transition={{ type: "spring", damping: 30, stiffness: 400 }}
-                rotationInterval={2200}
+                splitBy="words"
+                staggerDuration={0}
+                initial={{ y: "110%", opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: "-110%", opacity: 0 }}
+                transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+                rotationInterval={2600}
               />
               <span className="mt-2 block">Find out where.</span>
             </h1>
