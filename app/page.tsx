@@ -44,6 +44,7 @@ export default function Home() {
                 splitLevelClassName="overflow-hidden pb-1"
                 splitBy="words"
                 staggerDuration={0}
+                animatePresenceMode="popLayout"
                 initial={{ y: "110%", opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 exit={{ y: "-110%", opacity: 0 }}
