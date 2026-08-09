@@ -5,6 +5,7 @@ import { PriceQuestionNote } from "./PriceQuestionNote";
 import { ChargeTable } from "./ChargeTable";
 import { RightsCards } from "./RightsCards";
 import { FlagCards } from "./FlagCards";
+import { LetterSection } from "./LetterSection";
 
 function SectionHeading({ children }: { children: React.ReactNode }) {
   return (
@@ -65,6 +66,15 @@ export function ResultsView({ bill }: { bill: BillView }) {
       <section>
         <SectionHeading>Questions worth asking</SectionHeading>
         <FlagCards flags={bill.flags} />
+      </section>
+
+      <section>
+        <SectionHeading>Send a letter</SectionHeading>
+        <p className="mb-3 text-sm text-slate-600">
+          This drafts a neutral, professional letter to the billing department
+          listing your questions and requesting a corrected itemized statement.
+        </p>
+        <LetterSection bill={bill} />
       </section>
     </div>
   );

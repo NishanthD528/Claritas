@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { billViewFromRows } from "@/lib/view";
 import { ResultsView } from "@/components/results/ResultsView";
+import { DisputeSection } from "@/components/results/DisputeSection";
 
 export const dynamic = "force-dynamic";
 
@@ -48,7 +49,7 @@ export default async function BillResultsPage({
 
   if (!bill) notFound();
 
-  const [{ data: charges }, { data: flags }, { data: rights }] =
+  const [{ data: charges }, { data: flags }, { data: rights }, { data: notes }] =
     await Promise.all([
       supabase
         .from("charges")
@@ -61,6 +62,11 @@ export default async function BillResultsPage({
         .select("charge_id, flag_type, severity, explanation, suggested_question")
         .eq("bill_id", bill.id),
       supabase.from("rights").select("right_key, relevance").eq("bill_id", bill.id),
+      supabase
+        .from("dispute_notes")
+        .select("id, note, created_at")
+        .eq("bill_id", bill.id)
+        .order("created_at", { ascending: true }),
     ]);
 
   const view = billViewFromRows(
@@ -73,6 +79,18 @@ export default async function BillResultsPage({
   return (
     <div>
       <ResultsView bill={view} />
+
+      <section className="mt-10 border-t border-slate-200 pt-8">
+        <h2 className="mb-3 text-lg font-semibold tracking-tight text-ink">
+          Track your dispute
+        </h2>
+        <DisputeSection
+          billId={bill.id}
+          initialStatus={view.status}
+          initialNotes={notes ?? []}
+        />
+      </section>
+
       <div className="mt-10 border-t border-slate-200 pt-6 text-sm">
         <Link href="/bills" className="text-accent hover:underline">
           ← All my bills
