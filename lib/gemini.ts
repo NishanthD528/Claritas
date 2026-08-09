@@ -12,15 +12,24 @@ import {
 } from "@google/generative-ai";
 import { EXTRACTION_PROMPT, TRANSCRIPTION_PROMPT } from "@/lib/prompts";
 
-// gemini-flash-lite-latest is Google's alias for the current stable free-tier
-// Flash-Lite model. We use it because extraction speed is critical: a large
-// itemized bill (100+ line items) takes ~97s on gemini-flash-latest, which
-// exceeds serverless function limits (Vercel caps at 60s) and fails outright.
-// Flash-Lite does the same structured extraction in ~38s for the same bill,
-// keeping large bills within the timeout while staying on the free tier.
-// (The spec targeted gemini-2.5-flash, but Google blocks that alias for new
-// API keys, and the plain flash model is too slow for big bills anyway.)
-const MODEL_NAME = "gemini-flash-lite-latest";
+// Model selection. gemini-flash-latest gives cleaner extraction (per-line
+// dates, tidy descriptions) but is slow on big bills: a 124-line bill takes
+// ~97s, past the serverless limit (Vercel caps at 60s), so it fails outright.
+// gemini-flash-lite-latest does the same bill in ~38s but a bit more roughly.
+// So we use the quality model for normal bills and switch to the fast one only
+// when the scrubbed text is large enough to risk a timeout. Both are free-tier
+// Flash aliases. (The spec targeted gemini-2.5-flash, but Google blocks that
+// alias for new API keys.)
+const QUALITY_MODEL = "gemini-flash-latest";
+const FAST_MODEL = "gemini-flash-lite-latest";
+
+// Above this many characters of scrubbed bill text, prefer the fast model so
+// large itemized bills finish within the function timeout.
+const FAST_MODEL_CHAR_THRESHOLD = 5000;
+
+function extractionModel(textLength: number): string {
+  return textLength > FAST_MODEL_CHAR_THRESHOLD ? FAST_MODEL : QUALITY_MODEL;
+}
 
 // Thrown when Gemini returns 429 (free tier is ~10 req/min). The route turns
 // this into a friendly retry message for the user.
@@ -101,7 +110,7 @@ export async function transcribeFile(
   bytes: Buffer,
   mimeType: string
 ): Promise<string> {
-  const model = getClient().getGenerativeModel({ model: MODEL_NAME });
+  const model = getClient().getGenerativeModel({ model: QUALITY_MODEL });
   try {
     const result = await model.generateContent([
       { text: TRANSCRIPTION_PROMPT },
@@ -120,7 +129,7 @@ export async function transcribeFile(
  */
 export async function extractCharges(scrubbedText: string): Promise<unknown> {
   const model = getClient().getGenerativeModel({
-    model: MODEL_NAME,
+    model: extractionModel(scrubbedText.length),
     generationConfig: {
       responseMimeType: "application/json",
       responseSchema: EXTRACTION_SCHEMA,

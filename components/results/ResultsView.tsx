@@ -6,10 +6,19 @@ import { ChargeTable } from "./ChargeTable";
 import { RightsCards } from "./RightsCards";
 import { FlagCards } from "./FlagCards";
 import { LetterSection } from "./LetterSection";
+import { StatTiles } from "./StatTiles";
 
-function SectionHeading({ children }: { children: React.ReactNode }) {
+// A colored accent bar keys each section to the palette (blue → emerald).
+function SectionHeading({
+  children,
+  color = "bg-accent",
+}: {
+  children: React.ReactNode;
+  color?: string;
+}) {
   return (
-    <h2 className="mb-3 text-lg font-semibold tracking-tight text-ink">
+    <h2 className="mb-3 flex items-center gap-2.5 text-lg font-semibold tracking-tight text-ink">
+      <span className={`h-5 w-1.5 flex-none rounded-full ${color}`} />
       {children}
     </h2>
   );
@@ -53,6 +62,8 @@ export function ResultsView({ bill }: { bill: BillView }) {
         </p>
       </div>
 
+      <StatTiles bill={bill} amountsComplete={amountsComplete} />
+
       <MathBanner
         stated={bill.stated_total}
         computed={bill.computed_total}
@@ -62,24 +73,32 @@ export function ResultsView({ bill }: { bill: BillView }) {
       <PriceQuestionNote />
 
       <section>
-        <SectionHeading>Every charge, explained</SectionHeading>
+        <SectionHeading color="bg-gradient-to-b from-blue-500 to-cyan-500">
+          Every charge, explained
+        </SectionHeading>
         <ChargeTable charges={bill.charges} flaggedLines={flaggedLines} />
       </section>
 
       {bill.rights.length > 0 ? (
         <section>
-          <SectionHeading>What you can do</SectionHeading>
+          <SectionHeading color="bg-gradient-to-b from-emerald-500 to-teal-500">
+            What you can do
+          </SectionHeading>
           <RightsCards rights={bill.rights} />
         </section>
       ) : null}
 
       <section>
-        <SectionHeading>Questions worth asking</SectionHeading>
+        <SectionHeading color="bg-gradient-to-b from-amber-500 to-orange-500">
+          Questions worth asking
+        </SectionHeading>
         <FlagCards flags={bill.flags} />
       </section>
 
       <section>
-        <SectionHeading>Send a letter</SectionHeading>
+        <SectionHeading color="bg-gradient-to-b from-indigo-500 to-blue-500">
+          Send a letter
+        </SectionHeading>
         <p className="mb-3 text-sm text-slate-600">
           This drafts a neutral, professional letter to the billing department
           listing your questions and requesting a corrected itemized statement.
