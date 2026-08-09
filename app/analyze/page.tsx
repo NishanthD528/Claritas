@@ -44,6 +44,23 @@ const LOADING_STEPS = [
   "Matching your rights and programs…",
 ];
 
+// A realistic synthetic bill so visitors can see a full analysis in one click.
+const SAMPLE_BILL = `Riverside General Hospital
+Patient Name: Jordan Smith
+Account #: 88231-04
+Date of Service: 06/14/2025
+
+99284  Emergency department visit, high complexity   1   $1,250.00
+99284  Emergency department visit, high complexity   1   $1,250.00
+80053  Comprehensive metabolic panel                 1   $180.00
+85025  Complete blood count                          1   $95.00
+71046  Chest X-ray, 2 views                          1   $320.00
+J1885  Ketorolac injection                           6   $90.00
+Miscellaneous supplies                               1   $475.00
+Anesthesiology services                              1   $600.00
+
+Stated Total: $4,000.00`;
+
 export default function AnalyzePage() {
   const router = useRouter();
   const [tab, setTab] = useState<"upload" | "paste">("upload");
@@ -147,10 +164,22 @@ export default function AnalyzePage() {
         can do next.
       </p>
 
-      <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
-        Your personal details (name, address, ID numbers, and similar) are
-        removed automatically before anything is analyzed. You can also black
-        out anything you prefer to omit before uploading.
+      <div className="mt-4 flex flex-col gap-3 rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between">
+        <span>
+          Your personal details (name, address, ID numbers, and similar) are
+          removed automatically before anything is analyzed.
+        </span>
+        <button
+          type="button"
+          onClick={() => {
+            setTab("paste");
+            setText(SAMPLE_BILL);
+            setError(null);
+          }}
+          className="inline-flex flex-none items-center gap-1 self-start rounded-lg border border-accent/40 bg-white px-3 py-1.5 text-sm font-medium text-accent transition hover:bg-accent-soft/40 active:scale-[0.98] sm:self-auto"
+        >
+          Try a sample bill →
+        </button>
       </div>
 
       <div className="mt-6 flex gap-2 border-b border-slate-200">

@@ -15,3 +15,27 @@ html {
 body {
   min-height: 100vh;
 }
+
+/* Slow blue→green gradient drift for hero and CTA bands. */
+@keyframes gradient-pan {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animate-gradient {
+  background-size: 200% 200%;
+  animation: gradient-pan 12s ease infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-gradient {
+    animation: none;
+  }
+}
