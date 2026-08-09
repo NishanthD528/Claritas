@@ -11,9 +11,8 @@
 //   4. scrub() ALL text before it is stored, logged, or reused.
 //   5. Gemini extraction call (JSON schema) -> validate/normalize.
 //   6. Deterministic rule pass (lib/flags.ts) over the bill's own contents.
-//   7. Persist for signed-in users; always return the analysis.
-//
-// The rights engine is added in a later step.
+//   7. Rights matcher (lib/rights.ts) against the bill's situation.
+//   8. Persist for signed-in users; always return the analysis.
 
 import { NextResponse } from "next/server";
 import { scrub } from "@/lib/scrub";
@@ -21,6 +20,7 @@ import { extractPdfText, SCAN_TEXT_THRESHOLD } from "@/lib/pdf";
 import { transcribeFile, extractCharges, RateLimitError } from "@/lib/gemini";
 import { validateExtraction, computeTotal } from "@/lib/types";
 import { runFlags } from "@/lib/flags";
+import { matchRights } from "@/lib/rights";
 import { createClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
@@ -153,7 +153,16 @@ export async function POST(request: Request) {
   // ---- 6: deterministic rule pass over the bill's own contents ------------
   const flags = runFlags(extraction);
 
-  // ---- 7: persist for signed-in users; always return the analysis ---------
+  // ---- 7: rights matcher against the bill's situation ---------------------
+  const rights = matchRights({
+    facility_type: extraction.facility_type,
+    charges: extraction.charges,
+    computed_total,
+    stated_total: extraction.stated_total,
+    status: "analyzed",
+  });
+
+  // ---- 8: persist for signed-in users; always return the analysis ---------
   const analysis = {
     filename,
     provider_name: extraction.provider_name,
@@ -165,6 +174,7 @@ export async function POST(request: Request) {
     flag_count: flags.length,
     charges: extraction.charges,
     flags,
+    rights,
     scrubbed_text: scrubbedText,
   };
 
@@ -237,6 +247,15 @@ export async function POST(request: Request) {
         suggested_question: f.suggested_question,
       }));
       await supabase.from("flags").insert(flagRows);
+    }
+
+    if (rights.length > 0) {
+      const rightRows = rights.map((r) => ({
+        bill_id: bill.id,
+        right_key: r.right_key,
+        relevance: r.relevance,
+      }));
+      await supabase.from("rights").insert(rightRows);
     }
 
     return NextResponse.json({ saved: true, billId: bill.id, analysis });
