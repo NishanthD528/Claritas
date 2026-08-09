@@ -36,13 +36,14 @@ function analysisToBillView(a: Analysis): BillView {
   };
 }
 
-const LOADING_STEPS = [
-  "Reading your bill…",
-  "Removing personal details…",
-  "Extracting every charge…",
-  "Checking the math and looking for inconsistencies…",
-  "Matching your rights and programs…",
-];
+// Labels for the real pipeline phases the server streams back.
+const PHASE_LABELS: Record<string, string> = {
+  reading: "Reading the document…",
+  scrubbing: "Removing personal details…",
+  extracting: "Identifying charges…",
+  checking: "Checking the math…",
+};
+const PHASE_ORDER = ["reading", "scrubbing", "extracting", "checking"];
 
 // A realistic synthetic bill so visitors can see a full analysis in one click.
 const SAMPLE_BILL = `Riverside General Hospital
@@ -68,7 +69,7 @@ export default function AnalyzePage() {
   const [text, setText] = useState("");
   const [dragging, setDragging] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [stepIdx, setStepIdx] = useState(0);
+  const [phase, setPhase] = useState<string>("reading");
   const [error, setError] = useState<string | null>(null);
   const [cooldown, setCooldown] = useState(0); // seconds left after a 429
   const [result, setResult] = useState<BillView | null>(null);
@@ -82,16 +83,6 @@ export default function AnalyzePage() {
     }, 1000);
     return () => clearInterval(id);
   }, [cooldown]);
-
-  // Cycle the loading label so it names the stage roughly in progress.
-  useEffect(() => {
-    if (!loading) return;
-    setStepIdx(0);
-    const id = setInterval(() => {
-      setStepIdx((i) => Math.min(i + 1, LOADING_STEPS.length - 1));
-    }, 2500);
-    return () => clearInterval(id);
-  }, [loading]);
 
   const onDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -114,6 +105,7 @@ export default function AnalyzePage() {
     }
 
     setLoading(true);
+    setPhase("reading");
     try {
       const body = new FormData();
       if (hasFile) body.append("file", file as File);
@@ -121,43 +113,85 @@ export default function AnalyzePage() {
 
       const res = await fetch("/api/analyze", { method: "POST", body });
 
-      // The server always answers with JSON on success or a handled error.
-      // If parsing fails, the response was a crash/timeout page — treat it as
-      // such rather than a generic network error.
-      let data: {
+      // The server streams newline-delimited JSON: {phase} updates as each
+      // real step completes, then a final {done, ...} or {error}. Pre-check
+      // errors arrive as a single JSON line handled the same way.
+      type Msg = {
+        phase?: string;
         error?: string;
+        rateLimited?: boolean;
+        done?: boolean;
         saved?: boolean;
         billId?: string | null;
         analysis?: Analysis;
-      } | null = null;
-      try {
-        data = await res.json();
-      } catch {
-        data = null;
+      };
+
+      let handled = false;
+      const handle = (msg: Msg): boolean => {
+        if (msg.phase) {
+          setPhase(msg.phase);
+          return false;
+        }
+        if (msg.rateLimited) {
+          setCooldown(60);
+          return true;
+        }
+        if (msg.error) {
+          setError(msg.error);
+          return true;
+        }
+        if (msg.done) {
+          if (msg.saved && msg.billId) {
+            router.push(`/bills/${msg.billId}`);
+          } else if (msg.analysis) {
+            setResult(analysisToBillView(msg.analysis));
+          } else {
+            setError("Something went wrong. Please try again.");
+          }
+          return true;
+        }
+        return false;
+      };
+
+      const processLine = (line: string) => {
+        const trimmed = line.trim();
+        if (!trimmed) return;
+        let msg: Msg | null = null;
+        try {
+          msg = JSON.parse(trimmed) as Msg;
+        } catch {
+          return;
+        }
+        if (handle(msg)) handled = true;
+      };
+
+      if (res.body) {
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          let nl: number;
+          while ((nl = buffer.indexOf("\n")) >= 0) {
+            processLine(buffer.slice(0, nl));
+            buffer = buffer.slice(nl + 1);
+          }
+        }
+        if (buffer.trim()) processLine(buffer); // trailing line, if any
       }
 
       if (res.status === 429) {
         setCooldown(60);
-        return;
+        handled = true;
       }
 
-      if (!res.ok || !data) {
+      if (!handled) {
         setError(
-          data?.error ??
-            "The analysis took too long or the file couldn't be processed. " +
-              "Try a clearer photo or paste the bill text instead."
+          "The analysis took too long or the file couldn't be processed. " +
+            "Try a clearer photo or paste the bill text instead."
         );
-        return;
-      }
-
-      if (data.saved && data.billId) {
-        router.push(`/bills/${data.billId}`);
-        return;
-      }
-      if (data.analysis) {
-        setResult(analysisToBillView(data.analysis));
-      } else {
-        setError("Something went wrong. Please try again.");
       }
     } catch {
       setError(
@@ -304,16 +338,32 @@ export default function AnalyzePage() {
         className="mt-6 inline-flex items-center justify-center rounded-lg bg-accent px-5 py-2.5 text-sm font-medium text-white transition hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-60"
       >
         {loading
-          ? LOADING_STEPS[stepIdx]
+          ? PHASE_LABELS[phase] ?? "Working…"
           : cooldown > 0
           ? `Try again in ${cooldown}s`
           : "Analyze this bill"}
       </button>
 
       {loading ? (
-        <p className="mt-3 text-xs text-slate-500">
-          This can take up to a minute for photos. Please keep this tab open.
-        </p>
+        <div className="mt-3 space-y-1">
+          <div className="flex gap-1.5">
+            {PHASE_ORDER.map((p) => {
+              const done = PHASE_ORDER.indexOf(p) < PHASE_ORDER.indexOf(phase);
+              const current = p === phase;
+              return (
+                <span
+                  key={p}
+                  className={`h-1 flex-1 rounded-full transition-colors ${
+                    done || current ? "bg-accent" : "bg-slate-200"
+                  }`}
+                />
+              );
+            })}
+          </div>
+          <p className="text-xs text-slate-500">
+            This can take up to a minute for photos. Please keep this tab open.
+          </p>
+        </div>
       ) : null}
     </div>
   );
