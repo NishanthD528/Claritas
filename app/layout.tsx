@@ -16,20 +16,35 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="font-sans text-ink bg-white antialiased">
-        <header className="border-b border-slate-200">
-          <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4">
-            <Link href="/" className="text-lg font-semibold tracking-tight">
+        <header className="sticky top-0 z-10 border-b border-slate-200 bg-white/80 backdrop-blur">
+          <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3.5">
+            <Link
+              href="/"
+              className="flex items-center gap-2 text-lg font-bold tracking-tight text-ink"
+            >
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent text-sm font-bold text-white">
+                C
+              </span>
               Claritas
             </Link>
-            <nav className="flex items-center gap-6 text-sm">
-              <Link href="/analyze" className="hover:text-accent">
-                Check a bill
-              </Link>
-              <Link href="/bills" className="hover:text-accent">
+            <nav className="flex items-center gap-2 text-sm sm:gap-4">
+              <Link
+                href="/bills"
+                className="hidden px-2 py-1.5 text-slate-600 transition hover:text-accent sm:inline"
+              >
                 My bills
               </Link>
-              <Link href="/auth" className="hover:text-accent">
+              <Link
+                href="/auth"
+                className="px-2 py-1.5 text-slate-600 transition hover:text-accent"
+              >
                 Sign in
+              </Link>
+              <Link
+                href="/analyze"
+                className="inline-flex items-center rounded-lg bg-accent px-4 py-2 font-medium text-white transition hover:bg-accent-hover"
+              >
+                Check a bill
               </Link>
             </nav>
           </div>

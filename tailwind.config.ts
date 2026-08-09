@@ -9,12 +9,13 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Calm, clinical palette. Deep teal accent on white.
+        // Trustworthy, engaging palette. Confident blue accent on white.
         ink: "#0f172a", // near-navy text
         accent: {
-          DEFAULT: "#0f766e", // dark teal
-          hover: "#115e59",
-          soft: "#ccfbf1",
+          DEFAULT: "#2563eb", // blue-600
+          hover: "#1d4ed8", // blue-700
+          soft: "#dbeafe", // blue-100
+          deep: "#1e3a8a", // blue-900, for dark blue sections
         },
         danger: {
           DEFAULT: "#b91c1c",
