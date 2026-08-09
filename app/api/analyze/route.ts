@@ -148,12 +148,29 @@ export async function POST(request: Request) {
     );
   }
 
-  // If line items came back but not one of them has a readable amount, the
-  // extraction is too garbled to show. Don't render a broken results page.
+  const anyCode = extraction.charges.some((c) => c.code !== null);
+  const anyAmount = extraction.charges.some((c) => c.amount_charged !== null);
+  const hasProvider = extraction.provider_name !== null;
+
+  // Doesn't look like a medical bill at all: nothing to itemize, or no codes,
+  // amounts, or provider context to anchor on. Don't force a result.
   if (
-    extraction.charges.length > 0 &&
-    extraction.charges.every((c) => c.amount_charged === null)
+    extraction.charges.length === 0 ||
+    (!anyCode && !anyAmount && !hasProvider)
   ) {
+    return NextResponse.json(
+      {
+        error:
+          "This doesn't look like an itemized medical bill. Make sure " +
+          "you're uploading or pasting the full itemized statement.",
+      },
+      { status: 422 }
+    );
+  }
+
+  // A real bill attempt, but no line amount was readable — too garbled to
+  // show without misleading numbers. Ask for a clearer version.
+  if (!anyAmount) {
     return NextResponse.json(
       {
         error:
