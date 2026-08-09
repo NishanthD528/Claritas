@@ -2,7 +2,7 @@
 //
 // A deliberately small, hand-written map of common comprehensive services and
 // the component services that are frequently billed together under them. This
-// is NOT a medical code database and owns no pricing — it is keyed on plain
+// is NOT a medical code database and owns no pricing; it is keyed on plain
 // description KEYWORDS, not code numbers, and only powers a "these are often
 // billed together, can you confirm they were correctly billed separately?"
 // question.

@@ -33,7 +33,7 @@ const SEVERITY_META: Record<
     badge: "bg-amber-100 text-amber-700",
   },
   low: {
-    label: "Minor — good to clarify",
+    label: "Minor, good to clarify",
     dot: "bg-slate-400",
     badge: "bg-slate-100 text-slate-600",
   },
@@ -106,7 +106,7 @@ export function FlagCards({ flags }: { flags: FlagView[] }) {
     return (
       <p className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
         No internal inconsistencies were detected on this bill. That does not
-        guarantee every charge is correct — it means the automated checks found
+        guarantee every charge is correct. It means the automated checks found
         nothing to question.
       </p>
     );

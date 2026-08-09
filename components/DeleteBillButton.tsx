@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 // Delete a saved bill (and its charges/flags/rights/notes via cascade). Two
-// clicks: the first arms a confirm state, the second deletes — no modal needed.
+// clicks: the first arms a confirm state, the second deletes, no modal needed.
 export function DeleteBillButton({
   billId,
   redirectTo,

@@ -67,7 +67,7 @@ export const RIGHTS: Record<RightKey, RightEntry> = {
     explanation:
       "This bill is from a hospital. Nonprofit hospitals are required to " +
       "maintain a written financial assistance policy, and eligibility is " +
-      "often far more generous than people expect — sometimes covering part " +
+      "often far more generous than people expect, and can cover part " +
       "or all of a bill well above the poverty line.",
     action:
       "Ask the billing office for the \"financial assistance application\" " +
@@ -104,7 +104,7 @@ export const RIGHTS: Record<RightKey, RightEntry> = {
     explanation:
       "Before paying anything, compare this bill against the Explanation of " +
       "Benefits (EOB) your insurer sent. The EOB shows what the plan paid, " +
-      "what was adjusted, and what you actually owe — which sometimes differs " +
+      "what was adjusted, and what you actually owe, which sometimes differs " +
       "from the provider's bill.",
     action:
       "Find the matching EOB from your insurer and confirm the patient " +
@@ -117,7 +117,7 @@ export const RIGHTS: Record<RightKey, RightEntry> = {
     explanation:
       "A bill shows what you were charged for, but not why. Claritas does not " +
       "give medical advice and cannot judge whether a test or service was " +
-      "needed — only your care team can. If a charge is unclear to you, it is " +
+      "needed. Only your care team can. If a charge is unclear to you, it is " +
       "always reasonable to ask why it was ordered and whether it was " +
       "necessary for your visit.",
     action:
@@ -266,7 +266,7 @@ export function matchRights(
       "every bill.",
   });
 
-  // medical_necessity (always) — a question to ask, never a judgment that
+  // medical_necessity (always): a question to ask, never a judgment that
   // anything was unnecessary.
   matched.push({
     right_key: "medical_necessity",

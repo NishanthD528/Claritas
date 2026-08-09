@@ -3,7 +3,7 @@ import Link from "next/link";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Claritas — Understand your medical bill",
+  title: "Claritas: Understand your medical bill",
   description:
     "Upload a medical bill and see every charge explained in plain English, with internal errors flagged and your rights spelled out.",
 };

@@ -43,7 +43,7 @@ export function ResultsView({ bill }: { bill: BillView }) {
     bill.service_date_start && bill.service_date_end
       ? bill.service_date_start === bill.service_date_end
         ? fmtDate(bill.service_date_start)
-        : `${fmtDate(bill.service_date_start)} – ${fmtDate(bill.service_date_end)}`
+        : `${fmtDate(bill.service_date_start)} to ${fmtDate(bill.service_date_end)}`
       : bill.service_date_start
       ? fmtDate(bill.service_date_start)
       : null;

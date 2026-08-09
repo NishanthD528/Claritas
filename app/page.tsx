@@ -5,7 +5,7 @@ import RotatingText from "@/components/RotatingText";
 const BENEFITS = [
   {
     title: "Every charge, explained",
-    body: "Each line item translated into plain English — what the service was, with no jargon.",
+    body: "Each line item translated into plain English, with no jargon.",
   },
   {
     title: "Errors found automatically",
@@ -55,7 +55,7 @@ export default function Home() {
             </h1>
             <p className="mt-6 max-w-xl text-lg text-blue-50">
               Claritas reads your bill, explains every charge, and shows you
-              exactly what to question — free.
+              exactly what to question, for free.
             </p>
             <div className="mt-8">
               <Link

@@ -69,7 +69,7 @@ export function MathBanner({
         The listed charges add up to{" "}
         <span className="font-semibold">{fmtMoney(computed)}</span>, but the
         bill&rsquo;s stated total is{" "}
-        <span className="font-semibold">{fmtMoney(stated)}</span> — a difference
+        <span className="font-semibold">{fmtMoney(stated)}</span>, a difference
         of <span className="font-semibold">{fmtMoney(Math.abs(diff))}</span>.
       </p>
       <p className="mt-2 text-xs text-slate-600">

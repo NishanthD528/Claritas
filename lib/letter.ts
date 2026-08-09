@@ -1,7 +1,7 @@
 // lib/letter.ts
 //
 // Deterministic dispute-letter generation. Built entirely from stored bill
-// data — never model-generated. The tone is neutral and professional, it
+// data, never model-generated. The tone is neutral and professional, it
 // lists each flagged line as a question, requests a corrected itemized
 // statement within 30 days, and (where the rights engine matched) asks for the
 // financial assistance application or notes the dispute. It NEVER asserts a

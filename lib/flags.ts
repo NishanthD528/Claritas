@@ -1,7 +1,7 @@
 // lib/flags.ts
 //
 // Deterministic, rule-based flagging. This is plain TypeScript run on the
-// bill's OWN contents — never model output. It states no fair price, no
+// bill's OWN contents, never model output. It states no fair price, no
 // benchmark, and no legal conclusion. Every flag is phrased as a QUESTION the
 // patient can ask their billing department, never an accusation.
 //
@@ -35,7 +35,7 @@ export interface Flag {
 }
 
 export interface FlagConfig {
-  // vague_line only fires above this dollar amount — a patient has a right to
+  // vague_line only fires above this dollar amount. A patient has a right to
   // know what a large, unlabeled charge was for.
   vagueLineMinAmount: number;
   // unit_anomaly fires when units exceed this on any line.
@@ -123,7 +123,7 @@ function checkBillMath(bill: BillExtraction, cfg: FlagConfig): Flag[] {
       severity: "high",
       explanation:
         `The individual charges add up to ${fmt(computed)}, but the total ` +
-        `printed on the bill is ${fmt(bill.stated_total)} — a difference of ` +
+        `printed on the bill is ${fmt(bill.stated_total)}, a difference of ` +
         `${fmt(diff)}.`,
       suggested_question:
         `Your itemized charges add up to ${fmt(computed)}, but the stated ` +

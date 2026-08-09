@@ -322,7 +322,7 @@ export default function AnalyzePage() {
             Claritas is getting a lot of requests right now.
           </p>
           <p className="mt-0.5">
-            Wait about a minute and try again — you can retry in{" "}
+            Wait about a minute and try again. You can retry in{" "}
             <span className="font-semibold tabular-nums">{cooldown}s</span>.
           </p>
         </div>

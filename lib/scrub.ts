@@ -5,7 +5,7 @@
 // browser and the raw, unscrubbed text must never leave the function.
 //
 // Design principle: aggressively remove personal identifiers, but NEVER touch
-// the data an audit depends on — provider name, service dates, billing codes,
+// the data an audit depends on: provider name, service dates, billing codes,
 // units, and dollar amounts. Over-redacting a name is harmless; accidentally
 // blanking a charge amount or a CPT code would make the analysis worthless.
 //
@@ -29,7 +29,7 @@ export const REDACTION_TOKENS = {
 } as const;
 
 // Words that can immediately follow "Patient"/"Guarantor" on a billing line
-// and are NOT names — these lines carry dollar amounts we must keep, e.g.
+// and are NOT names; these lines carry dollar amounts we must keep, e.g.
 // "Patient Responsibility: $200.00" or "Guarantor Balance Due: $50.00".
 const BILLING_TERM_AFTER_NAME_LABEL = new RegExp(
   "^(responsibility|responsible\\s+amount|balance|portion|payment|paid|due|" +
@@ -84,7 +84,7 @@ const INLINE_ID_RE = new RegExp(
 
 // Address lines that the US-style street/zip passes miss: apartment blocks and
 // international address components (e.g. "... Apts, 54 NO10011", "Bengaloru
-// 560035"). Kept narrow so medical terms aren't caught — note "block",
+// 560035"). Kept narrow so medical terms aren't caught. Note "block",
 // "colony", and "sector" are deliberately excluded ("nerve block", "colony
 // count" are real charges).
 const APT_ADDRESS_LINE_RE = /^.*\b(?:apartments?|apts?|nagar|layout)\b.*$/gim;
@@ -93,7 +93,7 @@ const ROAD_COMMA_LINE_RE =
 const INTL_CITY_POSTCODE_RE = /\b[A-Z][a-zA-Z]{3,}\s+\d{6}\b/g;
 
 // Name-in-context patterns. We capture the patient/guarantor name from the
-// contexts a bill states it in, then redact EVERY occurrence of that name —
+// contexts a bill states it in, then redact EVERY occurrence of that name,
 // including a bare name line that carries no label of its own.
 const NAME_CONTEXT_RES: RegExp[] = [
   // "... for Veeresa Dara (Guarantor #...)" / "services for NAME"
@@ -143,7 +143,7 @@ type LabelGroup = {
   guardAmount?: boolean;
 };
 
-// A value that is only a dollar amount / number-with-currency — never redact.
+// A value that is only a dollar amount / number-with-currency; never redact.
 const PURE_AMOUNT_RE = /^\$?\s*[\d,]+(?:\.\d{1,2})?\s*$/;
 
 const sep = "\\s*[:#\\-]?\\s*";
@@ -192,7 +192,7 @@ const LABEL_GROUPS: LabelGroup[] = [
     token: REDACTION_TOKENS.id,
   },
   {
-    // Names (broadest — tested last). Guarded against billing-amount lines.
+    // Names (broadest, tested last). Guarded against billing-amount lines.
     label: new RegExp(
       `^\\s*(?:patient\\s+name|guarantor\\s+name|subscriber\\s+name|insured\\s+name|` +
         `member\\s+name|responsible\\s+party|bill\\s+to|name|patient|guarantor|` +
@@ -233,7 +233,7 @@ export function scrub(input: string): string {
   if (!input) return "";
 
   // 1) Names stated in context are captured from the ORIGINAL text (before
-  //    other passes rewrite it), then every occurrence is redacted — including
+  //    other passes rewrite it), then every occurrence is redacted, including
   //    a bare name line elsewhere in the document.
   const names = extractNames(input);
 
@@ -262,7 +262,7 @@ export function scrub(input: string): string {
     (_m, label) => `${label} ${REDACTION_TOKENS.id}`
   );
 
-  // 5) Redact every occurrence of a name captured from context — including a
+  // 5) Redact every occurrence of a name captured from context, including a
   //    bare name line that carried no label of its own.
   for (const name of names) {
     text = text.replace(new RegExp(escapeRegExp(name), "gi"), REDACTION_TOKENS.name);

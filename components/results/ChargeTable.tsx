@@ -63,7 +63,7 @@ export function ChargeTable({
                   className={flagged ? "bg-danger-soft/40" : undefined}
                 >
                   <td className="whitespace-nowrap px-4 py-3 align-top font-mono text-xs text-slate-700">
-                    {c.code ?? "—"}
+                    {c.code ?? "-"}
                     {c.code_type !== "none" && c.code ? (
                       <span className="ml-1 rounded bg-slate-100 px-1 py-0.5 text-[10px] uppercase text-slate-500">
                         {c.code_type}
@@ -92,7 +92,7 @@ export function ChargeTable({
                       ) : null}
                       <div>
                         <div className="flex items-center gap-2 font-medium text-ink">
-                          {c.description_raw || c.description_plain || "—"}
+                          {c.description_raw || c.description_plain || "-"}
                           {unclear ? (
                             <span
                               title="This line couldn't be read clearly from the bill"

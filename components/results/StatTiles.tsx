@@ -15,7 +15,7 @@ export function StatTiles({
   const tiles = [
     {
       label: "Total billed",
-      value: amountsComplete || bill.stated_total !== null ? fmtMoney(total) : "—",
+      value: amountsComplete || bill.stated_total !== null ? fmtMoney(total) : "-",
       className: "from-blue-50 to-white border-blue-100",
       accent: "text-blue-700",
     },

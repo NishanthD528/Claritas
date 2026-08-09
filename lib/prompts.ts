@@ -9,7 +9,7 @@
 // single most important behavioral constraint of the whole app.
 
 // Used on the image/scan path to turn pixels into text BEFORE scrubbing.
-// We ask only for a faithful transcription — no interpretation.
+// We ask only for a faithful transcription, no interpretation.
 export const TRANSCRIPTION_PROMPT = `You are transcribing a medical bill image.
 Return the full text of the document exactly as it appears, line by line.
 Preserve billing codes, descriptions, dates, units, and dollar amounts.
