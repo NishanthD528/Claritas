@@ -70,8 +70,18 @@ export default function AnalyzePage() {
   const [loading, setLoading] = useState(false);
   const [stepIdx, setStepIdx] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [cooldown, setCooldown] = useState(0); // seconds left after a 429
   const [result, setResult] = useState<BillView | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Count the rate-limit cooldown down to zero.
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const id = setInterval(() => {
+      setCooldown((s) => Math.max(0, s - 1));
+    }, 1000);
+    return () => clearInterval(id);
+  }, [cooldown]);
 
   // Cycle the loading label so it names the stage roughly in progress.
   useEffect(() => {
@@ -91,6 +101,9 @@ export default function AnalyzePage() {
   }, []);
 
   async function submit() {
+    // Guard against fast double-clicks burning two Gemini calls on one bill,
+    // and against submitting during the rate-limit cooldown.
+    if (loading || cooldown > 0) return;
     setError(null);
     setResult(null);
     const hasFile = tab === "upload" && file;
@@ -121,6 +134,11 @@ export default function AnalyzePage() {
         data = await res.json();
       } catch {
         data = null;
+      }
+
+      if (res.status === 429) {
+        setCooldown(60);
+        return;
       }
 
       if (!res.ok || !data) {
@@ -264,7 +282,17 @@ export default function AnalyzePage() {
         </div>
       )}
 
-      {error ? (
+      {cooldown > 0 ? (
+        <div className="mt-4 rounded-md bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          <p className="font-medium">
+            Claritas is getting a lot of requests right now.
+          </p>
+          <p className="mt-0.5">
+            Wait about a minute and try again — you can retry in{" "}
+            <span className="font-semibold tabular-nums">{cooldown}s</span>.
+          </p>
+        </div>
+      ) : error ? (
         <p className="mt-4 rounded-md bg-danger-soft px-4 py-3 text-sm text-danger">
           {error}
         </p>
@@ -272,10 +300,14 @@ export default function AnalyzePage() {
 
       <button
         onClick={submit}
-        disabled={loading}
+        disabled={loading || cooldown > 0}
         className="mt-6 inline-flex items-center justify-center rounded-lg bg-accent px-5 py-2.5 text-sm font-medium text-white transition hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-60"
       >
-        {loading ? LOADING_STEPS[stepIdx] : "Analyze this bill"}
+        {loading
+          ? LOADING_STEPS[stepIdx]
+          : cooldown > 0
+          ? `Try again in ${cooldown}s`
+          : "Analyze this bill"}
       </button>
 
       {loading ? (
