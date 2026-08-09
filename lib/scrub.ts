@@ -72,6 +72,61 @@ const STREET_RE = new RegExp(
   "gi"
 );
 
+// Inline identifiers that appear mid-line, e.g. "(Guarantor #1000619184)" or
+// "Account No 55210". The value must contain at least one digit and be 4+
+// chars, so it never matches a dollar amount (those carry $ / decimals).
+const INLINE_ID_RE = new RegExp(
+  "\\b(guarantor|account|acct|mrn|medical\\s+record|claim|chart|statement|" +
+    "invoice|member|subscriber|policy)\\b[\\s:#no.-]*" +
+    "((?=[A-Za-z0-9-]*\\d)[A-Za-z0-9-]{4,})",
+  "gi"
+);
+
+// Address lines that the US-style street/zip passes miss: apartment blocks and
+// international address components (e.g. "... Apts, 54 NO10011", "Bengaloru
+// 560035"). Kept narrow so medical terms aren't caught — note "block",
+// "colony", and "sector" are deliberately excluded ("nerve block", "colony
+// count" are real charges).
+const APT_ADDRESS_LINE_RE = /^.*\b(?:apartments?|apts?|nagar|layout)\b.*$/gim;
+const ROAD_COMMA_LINE_RE =
+  /^.*\b(?:road|street|marg|avenue|lane)\s*,\s*[A-Za-z].*$/gim;
+const INTL_CITY_POSTCODE_RE = /\b[A-Z][a-zA-Z]{3,}\s+\d{6}\b/g;
+
+// Name-in-context patterns. We capture the patient/guarantor name from the
+// contexts a bill states it in, then redact EVERY occurrence of that name —
+// including a bare name line that carries no label of its own.
+const NAME_CONTEXT_RES: RegExp[] = [
+  // "... for Veeresa Dara (Guarantor #...)" / "services for NAME"
+  /\bfor\s+([A-Z][A-Za-z.'-]+(?:\s+[A-Z][A-Za-z.'-]+){1,3})(?=\s*\(?\s*(?:guarantor|patient|account|mrn|dob)|[\s.,)])/g,
+  // "Guarantor: NAME", "Patient Name: NAME", "Bill To: NAME"
+  /\b(?:guarantor|patient|subscriber|insured|member|responsible\s+party|bill\s+to)(?:\s+name)?\s*[:#]\s*([A-Z][A-Za-z.'-]+(?:\s+[A-Z][A-Za-z.'-]+){1,3})/gi,
+];
+
+// Words that can be capitalized in a name context but are not personal names;
+// don't redact these as name tokens.
+const NAME_TOKEN_STOPWORDS = new Set([
+  "the","and","for","guarantor","patient","health","hospital","medical",
+  "center","clinic","services","service","document","following","contains",
+  "requested","questions","please","contact","customer","insurance","payments",
+  "charges","adjustments","total","date","account","number","this","not","bill",
+]);
+
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+// Collect distinct personal names stated in name contexts.
+function extractNames(text: string): string[] {
+  const names = new Set<string>();
+  for (const re of NAME_CONTEXT_RES) {
+    for (const m of Array.from(text.matchAll(re))) {
+      const name = (m[1] || "").trim();
+      if (name.split(/\s+/).length >= 2) names.add(name);
+    }
+  }
+  return Array.from(names);
+}
+
 // ---------------------------------------------------------------------------
 // Label-anchored line pass. For lines shaped "Label: value" we replace the
 // value with a token. Label groups are tested most-specific-first so an ID
@@ -177,19 +232,49 @@ function scrubLine(line: string): string {
 export function scrub(input: string): string {
   if (!input) return "";
 
-  // 1) Global structured passes. Order matters: SSN before phone.
+  // 1) Names stated in context are captured from the ORIGINAL text (before
+  //    other passes rewrite it), then every occurrence is redacted — including
+  //    a bare name line elsewhere in the document.
+  const names = extractNames(input);
+
+  // 2) Global structured passes. Order matters: SSN before phone.
   let text = input
     .replace(SSN_RE, REDACTION_TOKENS.ssn)
     .replace(EMAIL_RE, REDACTION_TOKENS.email)
     .replace(PHONE_RE, REDACTION_TOKENS.phone)
     .replace(CITY_STATE_ZIP_RE, REDACTION_TOKENS.address)
-    .replace(STREET_RE, REDACTION_TOKENS.address);
+    .replace(STREET_RE, REDACTION_TOKENS.address)
+    .replace(APT_ADDRESS_LINE_RE, REDACTION_TOKENS.address)
+    .replace(ROAD_COMMA_LINE_RE, REDACTION_TOKENS.address)
+    .replace(INTL_CITY_POSTCODE_RE, REDACTION_TOKENS.address);
 
-  // 2) Label-anchored line pass for the remaining structured identifiers.
+  // 3) Label-anchored line pass handles line-start "Label: value" first, so an
+  //    ID label (e.g. "Guarantor No:") wins over the broad name label.
   text = text
     .split("\n")
     .map((line) => scrubLine(line))
     .join("\n");
+
+  // 4) Inline identifiers the label pass can't see (mid-line, in prose), e.g.
+  //    "(Guarantor #1000619184)".
+  text = text.replace(
+    INLINE_ID_RE,
+    (_m, label) => `${label} ${REDACTION_TOKENS.id}`
+  );
+
+  // 5) Redact every occurrence of a name captured from context — including a
+  //    bare name line that carried no label of its own.
+  for (const name of names) {
+    text = text.replace(new RegExp(escapeRegExp(name), "gi"), REDACTION_TOKENS.name);
+    for (const token of name.split(/\s+/)) {
+      if (token.length >= 4 && !NAME_TOKEN_STOPWORDS.has(token.toLowerCase())) {
+        text = text.replace(
+          new RegExp(`\\b${escapeRegExp(token)}\\b`, "gi"),
+          REDACTION_TOKENS.name
+        );
+      }
+    }
+  }
 
   return text;
 }

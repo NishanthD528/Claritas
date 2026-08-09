@@ -78,6 +78,33 @@ describe("scrub() removes every PII identifier type", () => {
     const insCount = (out.match(/\[REDACTED_INSURANCE_ID\]/g) || []).length;
     expect(insCount).toBe(2);
   });
+
+  test("12. inline guarantor number in prose", () => {
+    const out = scrub(
+      "The requested services for the patient (Guarantor #1000619184)."
+    );
+    expect(out).not.toMatch(/1000619184/);
+    expect(out).toContain(REDACTION_TOKENS.id);
+  });
+
+  test("13. name stated in context is redacted everywhere, incl. a bare line", () => {
+    const out = scrub(
+      "Services requested for Jordan Rivera (Guarantor #77120).\nJordan Rivera\n99213 Office Visit 1 $150.00"
+    );
+    expect(out).not.toMatch(/Jordan|Rivera/);
+    expect(out).toContain(REDACTION_TOKENS.name);
+    // The charge line survives untouched.
+    expect(out).toContain("99213");
+    expect(out).toContain("$150.00");
+  });
+
+  test("14. non-US address block (apartment / road / city+postcode)", () => {
+    const out = scrub(
+      "E-303, Maple Dhavala Apts, 54 NO10011\nOak Road, Carmelville\nBengaloru 560035"
+    );
+    expect(out).not.toMatch(/Dhavala|Carmelville|Bengaloru|560035/);
+    expect(out).toContain(REDACTION_TOKENS.address);
+  });
 });
 
 describe("scrub() preserves audit-critical data", () => {
