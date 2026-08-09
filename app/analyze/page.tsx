@@ -107,10 +107,28 @@ export default function AnalyzePage() {
       if (hasText) body.append("text", text);
 
       const res = await fetch("/api/analyze", { method: "POST", body });
-      const data = await res.json();
 
-      if (!res.ok) {
-        setError(data?.error ?? "Something went wrong. Please try again.");
+      // The server always answers with JSON on success or a handled error.
+      // If parsing fails, the response was a crash/timeout page — treat it as
+      // such rather than a generic network error.
+      let data: {
+        error?: string;
+        saved?: boolean;
+        billId?: string | null;
+        analysis?: Analysis;
+      } | null = null;
+      try {
+        data = await res.json();
+      } catch {
+        data = null;
+      }
+
+      if (!res.ok || !data) {
+        setError(
+          data?.error ??
+            "The analysis took too long or the file couldn't be processed. " +
+              "Try a clearer photo or paste the bill text instead."
+        );
         return;
       }
 
@@ -118,9 +136,15 @@ export default function AnalyzePage() {
         router.push(`/bills/${data.billId}`);
         return;
       }
-      setResult(analysisToBillView(data.analysis));
+      if (data.analysis) {
+        setResult(analysisToBillView(data.analysis));
+      } else {
+        setError("Something went wrong. Please try again.");
+      }
     } catch {
-      setError("Could not reach the analysis service. Please try again.");
+      setError(
+        "Couldn't reach the analysis service. Check your connection and try again."
+      );
     } finally {
       setLoading(false);
     }

@@ -148,19 +148,30 @@ export async function POST(request: Request) {
     );
   }
 
-  const computed_total = computeTotal(extraction.charges);
+  let computed_total: number;
+  let flags;
+  let rights;
+  try {
+    computed_total = computeTotal(extraction.charges);
 
-  // ---- 6: deterministic rule pass over the bill's own contents ------------
-  const flags = runFlags(extraction);
+    // ---- 6: deterministic rule pass over the bill's own contents ----------
+    flags = runFlags(extraction);
 
-  // ---- 7: rights matcher against the bill's situation ---------------------
-  const rights = matchRights({
-    facility_type: extraction.facility_type,
-    charges: extraction.charges,
-    computed_total,
-    stated_total: extraction.stated_total,
-    status: "analyzed",
-  });
+    // ---- 7: rights matcher against the bill's situation -------------------
+    rights = matchRights({
+      facility_type: extraction.facility_type,
+      charges: extraction.charges,
+      computed_total,
+      stated_total: extraction.stated_total,
+      status: "analyzed",
+    });
+  } catch {
+    // Never let post-extraction analysis crash into a non-JSON 500.
+    return NextResponse.json(
+      { error: "The bill could not be analyzed. Please try again." },
+      { status: 500 }
+    );
+  }
 
   // ---- 8: persist for signed-in users; always return the analysis ---------
   const analysis = {
